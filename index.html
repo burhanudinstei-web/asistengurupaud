@@ -289,8 +289,8 @@
     </div>
 
     <script>
-        // API Config
-        const apiKey = "AIzaSyCQx1mF47QL_oxY2aXVmvF1z7TOKeQTDrE"; // Set by environment
+        // API Config - SILAKAN ISI KEMBALI API KEY DI SINI JIKA MAU MENGGUNAKAN KEY SENDIRI
+        const apiKey = "AIzaSyCQx1mF47QL_oxY2aXVmvF1z7TOKeQTDrE"; 
         let currentGeneratorType = 'rpph';
         let savedDocuments = [];
 
@@ -531,11 +531,17 @@ Berikan contoh tabel lembar kerja asesmen yang bisa langsung dicetak/digunakan o
 
         // Call Gemini API with Exponential Backoff
         async function callGeminiAPI(userQuery) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            // Menggunakan endpoint model produksi yang stabil: gemini-2.5-flash
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
             
-            // Limit system instruction + current conversation
+            // Format ulang riwayat obrolan agar sesuai dengan format pesan API resmi
+            const formattedContents = chatHistory.map(msg => ({
+                role: msg.role === 'model' ? 'model' : 'user',
+                parts: [{ text: msg.parts[0].text }]
+            }));
+
             const payload = {
-                contents: chatHistory,
+                contents: formattedContents,
                 systemInstruction: {
                     parts: [{ text: systemPrompt }]
                 }
@@ -555,9 +561,12 @@ Berikan contoh tabel lembar kerja asesmen yang bisa langsung dicetak/digunakan o
                     if (response.ok) {
                         const data = await response.json();
                         return data.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf Bun, terjadi kesalahan saat menyusun tanggapan.";
+                    } else {
+                        const errData = await response.json();
+                        console.error("API error response:", errData);
                     }
                 } catch (error) {
-                    console.error("Retrying API call...", error);
+                    console.error("Retrying API call due to error...", error);
                 }
 
                 // Exponential backoff delay
@@ -566,7 +575,7 @@ Berikan contoh tabel lembar kerja asesmen yang bisa langsung dicetak/digunakan o
             }
 
             showToast("Gagal terhubung ke Bunda Ceria. Periksa jaringan Anda.");
-            return "Maaf sekali Bunda, koneksi saya sedang terputus sementara. Tolong pastikan koneksi internet stabil dan coba kirim ulang ya Bun! ❤️";
+            return "Maaf sekali Bunda, koneksi saya sedang terputus sementara. Tolong pastikan kunci API Google AI Studio Anda aktif dan tidak dibatasi negara, lalu coba kirim kembali ya Bun! ❤️";
         }
 
         // Copy Text via standard copy command to ensure iframe compatibility
